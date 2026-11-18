@@ -60,6 +60,26 @@
     margin-left:auto;font-size:11px;color:var(--muted);
     border:1px solid var(--line);border-radius:99px;padding:6px 10px;white-space:nowrap;
   }
+  .icon-btn{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--text);font-size:16px;line-height:1;flex:0 0 auto}
+
+  .modal{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.72);display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(4px)}
+  @media(min-width:620px){.modal{align-items:center;padding:20px}}
+  .modal-card{width:100%;max-width:560px;max-height:88vh;overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:20px 20px 0 0;padding:18px 16px calc(18px + var(--sab))}
+  @media(min-width:620px){.modal-card{border-radius:20px;padding-bottom:18px}}
+  .modal-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .modal-head h2{font-size:17px;margin:0}
+  .modal-head button{margin-left:auto;background:var(--surface-2);border:1px solid var(--line);color:var(--text);width:32px;height:32px;border-radius:9px;font-size:15px}
+  .addon-item{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:9px;background:var(--surface-2)}
+  .addon-top{display:flex;align-items:center;gap:7px;margin-bottom:7px}
+  .addon-top input{flex:1;min-width:0;background:transparent;border:0;border-bottom:1px solid var(--line);color:var(--text);padding:4px 2px;outline:0;font-weight:700;font-size:13px}
+  .addon-item input.url{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--muted);padding:8px;font-size:11px;outline:0}
+  .mini-btn{background:var(--surface);border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:6px 9px;font-size:11px}
+  .mini-btn.danger{color:#ffc9c9}
+  .add-row{display:flex;gap:7px;margin-top:12px}
+  .add-row input{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:9px;color:var(--text);padding:10px;font-size:12px;outline:0}
+  .add-row button{border:0;border-radius:9px;background:var(--accent);color:#1a0d08;font-weight:800;padding:0 15px;font-size:13px}
+  .modal-actions{display:flex;gap:8px;margin-top:14px}
+  .modal-actions .btn{flex:1}
 
   .search-card{margin:18px 0 8px}
   .search-row{display:flex;gap:8px}
@@ -255,6 +275,7 @@
   .badge.kind{color:#a8b6cf;background:rgba(255,255,255,.06)}
   .badge.kind.host-page{color:#9ee7c2;background:rgba(74,222,128,.1)}
   .badge.kind.stream{color:#f0b8ff;background:rgba(200,120,255,.12)}
+  .badge.kind.torrent{color:#c4b5fd;background:rgba(139,92,246,.16)}
   .badge.exp{color:#ffd8a8;background:rgba(255,180,80,.12)}
   .badge.exp.expired{color:#ffc9c9;background:rgba(248,113,113,.16)}
   .relink-note{font-size:11px;color:#ffc9c9;margin-top:7px}
@@ -290,6 +311,7 @@
   <div class="logo">🎬</div>
   <div class="brand">ReelFind<small>Search · Find · Download</small></div>
   <div class="pill">⬇ Downloader · no hosting</div>
+  <button class="icon-btn" id="openSettings" aria-label="Settings" title="Settings">⚙️</button>
 </header>
 
 <main class="app">
@@ -403,6 +425,26 @@
   </div>
 </main>
 
+<div class="modal" id="settingsModal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-label="Settings">
+    <div class="modal-head">
+      <h2>⚙️ Sources & settings</h2>
+      <button id="closeSettings" aria-label="Close">✕</button>
+    </div>
+    <div class="hint" style="margin-top:0">Add any Stremio addon manifest URL. Torrent / magnet links from any source get a 🧲 button automatically.</div>
+    <div id="addonList"></div>
+    <div class="add-row">
+      <input id="newAddonUrl" type="url" placeholder="https://addon.example.com/manifest.json" aria-label="New addon manifest URL">
+      <button id="addAddon">Add</button>
+    </div>
+    <div class="hint" id="settingsMsg" style="min-height:18px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="resetAddons">Reset defaults</button>
+      <button class="btn btn-primary" id="saveAddons">Save & close</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast" role="status" aria-live="polite"></div>
 
 <script>
@@ -411,11 +453,12 @@
 
   // ---------- config ----------
   const CINEMETA = 'https://v3-cinemeta.strem.io';
-  const ADDONS = [
+  const DEFAULT_ADDONS = [
     { id:'notorrent', name:'NoTorrent', base:'https://addon.notorrent2.workers.dev' },
     { id:'hdhub', name:'HdHub', base:'https://hdhub.thevolecitor.qzz.io/eyJ0b3Jib3giOiJ1bnNldCIsInF1YWxpdGllcyI6IjIxNjBwLDEwODBwLDcyMHAiLCJzb3J0IjoiZGVzYyJ9' },
     { id:'pengu', name:'PenguPlay', base:'https://pengu.uk/%7B%22auth_token%22%3A%22X8SGVUl25yfL5T-sTqQdFBh92tlDhY_wVCUMZRa7VAk%22%7D' }
   ];
+  let ADDONS = loadAddons();
 
   const $  = (s, r=document) => r.querySelector(s);
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
@@ -435,19 +478,37 @@
     return u;
   }
 
+  // Stremio torrent streams use infoHash (+ optional trackers) or a magnet / .torrent URL.
+  function torrentFor(s){
+    const u = s.url || '';
+    if (/^magnet:/i.test(u)) return u;
+    if (/\.torrent(\?|$)/i.test(u)) return u;
+    if (s.infoHash && /^[a-z0-9]{32,40}$/i.test(s.infoHash)){
+      let m = `magnet:?xt=urn:btih:${s.infoHash}`;
+      const dn = (s.behaviorHints && s.behaviorHints.filename) || s.name || '';
+      if (dn) m += `&dn=${encodeURIComponent(dn)}`;
+      (s.sources || []).forEach(t => { if (t) m += `&tr=${encodeURIComponent(t)}`; });
+      return m;
+    }
+    return '';
+  }
   // Classify every link so each source is presented consistently:
   // host-page = open a landing page and press Download there
   // direct    = opens the file, Copy works in downloaders / address bar
+  // torrent   = magnet / .torrent, opens in a torrent client
   // stream    = HLS/DASH player URL, not a download
   function linkInfo(s){
     const u = s.url || '';
     let host = '';
     try { host = new URL(u).hostname; } catch {}
+    const tor = torrentFor(s);
+    if (tor) return { kind:'torrent', open:tor, host };
     if (/\.(m3u8|mpd)(\?|$)/i.test(u) || /\/redirect\?p=/i.test(u)) return { kind:'stream', open:u, host };
     if (/^pixeldrain\.(dev|com)$/i.test(host) && /\/api\/file\//i.test(u)) return { kind:'host-page', open:openUrlFor(u), host };
     if (/hubcloud\./i.test(host)) return { kind:'host-page', open:u, host };
     return { kind:'direct', open:u, host };
   }
+  function copyUrlFor(s){ return linkInfo(s).kind === 'torrent' ? linkInfo(s).open : s.url; }
 
   // S3/R2 presigned URLs carry their own expiry (usually a few hours).
   function expiryOf(s){
@@ -477,8 +538,22 @@
   };
   let lastLoad = 0, expiryTimer, autoRefreshed = false;
 
+  function loadAddons(){
+    try {
+      const a = JSON.parse(localStorage.getItem('rf_addons'));
+      if (Array.isArray(a) && a.length && a.every(x => x && x.id && x.base)) return a;
+    } catch {}
+    return DEFAULT_ADDONS.map(x => ({...x}));
+  }
+  function saveAddons(){ localStorage.setItem('rf_addons', JSON.stringify(ADDONS)); }
   function loadSources(){
-    try { const a = JSON.parse(localStorage.getItem('rf_sources')); if (Array.isArray(a) && a.length) return a; } catch {}
+    try {
+      const a = JSON.parse(localStorage.getItem('rf_sources'));
+      if (Array.isArray(a)){
+        const valid = a.filter(id => ADDONS.some(x => x.id === id));
+        if (valid.length) return valid;
+      }
+    } catch {}
     return ADDONS.map(a => a.id);
   }
   function saveSources(){ localStorage.setItem('rf_sources', JSON.stringify(state.sources)); }
@@ -699,6 +774,64 @@
     }).join('');
   }
 
+  // ---------- settings ----------
+  function settingsMsg(t){ $('#settingsMsg').textContent = t || ''; }
+  function baseFromUrl(raw){
+    let u = String(raw || '').trim();
+    if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+    u = u.replace(/\/manifest\.json\/?(?:\?[^#]*)?/i, '').replace(/\/+$/, '');
+    try {
+      const x = new URL(u);
+      return (x.protocol === 'https:' || x.protocol === 'http:') ? x.href.replace(/\/+$/, '') : '';
+    } catch { return ''; }
+  }
+  function renderSettingsAddons(){
+    $('#addonList').innerHTML = ADDONS.map((a,i) => `
+      <div class="addon-item" data-idx="${i}">
+        <div class="addon-top">
+          <input type="checkbox" data-a-enabled ${state.sources.includes(a.id) ? 'checked' : ''} aria-label="Enable ${esc(a.name)}">
+          <input type="text" data-a-name value="${esc(a.name)}" aria-label="Source name">
+          <button class="mini-btn danger" data-a-remove>Remove</button>
+        </div>
+        <input class="url" type="text" data-a-base value="${esc(a.base)}" aria-label="Source base URL" spellcheck="false">
+      </div>`).join('');
+  }
+  function readSettingsForm(){
+    $$('#addonList .addon-item').forEach(row => {
+      const i = Number(row.dataset.idx), a = ADDONS[i];
+      if (!a) return;
+      const name = $('[data-a-name]', row).value.trim();
+      const base = baseFromUrl($('[data-a-base]', row).value);
+      if (name) a.name = name;
+      if (base) a.base = base;
+      const on = $('[data-a-enabled]', row).checked;
+      state.sources = on ? [...new Set([...state.sources, a.id])] : state.sources.filter(x => x !== a.id);
+    });
+  }
+  function openSettings(){
+    renderSettingsAddons(); settingsMsg('');
+    $('#settingsModal').hidden = false;
+    $('#newAddonUrl').focus();
+  }
+  function closeSettings(){ $('#settingsModal').hidden = true; }
+  async function addAddonFromInput(){
+    const base = baseFromUrl($('#newAddonUrl').value);
+    if (!base){ settingsMsg('Enter a valid addon URL.'); return; }
+    if (ADDONS.some(a => a.base === base)){ settingsMsg('That addon is already in the list.'); return; }
+    settingsMsg('Checking addon…');
+    let name = new URL(base).hostname.replace(/^www\./, '');
+    try {
+      const d = await fetchJson(base + '/manifest.json', 12000);
+      if (d && d.name) name = d.name;
+    } catch {}
+    ADDONS.push({ id: 'custom_' + Date.now().toString(36), name, base, custom:true });
+    state.sources.push(ADDONS[ADDONS.length-1].id);
+    $('#newAddonUrl').value = '';
+    saveAddons(); saveSources();
+    renderSettingsAddons(); renderSourceToggles();
+    settingsMsg('Added ' + name + ' — save to keep.');
+  }
+
   // ---------- streams ----------
   function qualityOf(s){
     const txt = `${s.name||''} ${s.description||''} ${s.title||''}`;
@@ -746,7 +879,7 @@
     results.forEach((res, i) => {
       const a = active[i];
       if (res.status !== 'fulfilled' || res.value.error){ state.status[a.id]='err'; return; }
-      const usable = res.value.streams.filter(s => s.url);
+      const usable = res.value.streams.filter(s => s.url || s.infoHash);
       const downloads = usable.filter(s => linkInfo(s).kind !== 'stream');
       state.status[a.id] = downloads.length ? 'ok' : (usable.length ? 'streams' : 'empty');
       usable.forEach(s => all.push({ ...s, _src: a.id, _srcName: a.name }));
@@ -817,11 +950,12 @@
       const desc = s.description || s.title || '';
       const info = linkInfo(s);
       const exp = expiryOf(s), expired = exp > 0 && exp <= Date.now();
-      const label = info.kind==='host-page' ? 'Open host page ↗' : info.kind==='stream' ? 'Open stream ↗' : 'Open / Download ↗';
+      const label = info.kind==='torrent' ? (/^magnet:/i.test(info.open) ? '🧲 Open magnet' : '🧲 Download .torrent')
+        : info.kind==='host-page' ? 'Open host page ↗' : info.kind==='stream' ? 'Open stream ↗' : 'Open / Download ↗';
       return `<article class="stream-card">
         <div class="sc-top">
           <span class="badge src ${esc(s._src)}">${esc(s._srcName)}</span>
-          <span class="badge kind ${esc(info.kind)}">${info.kind==='host-page'?'HOST PAGE':info.kind==='stream'?'STREAM':'DIRECT'}</span>
+          <span class="badge kind ${esc(info.kind)}">${info.kind==='torrent'?'TORRENT':info.kind==='host-page'?'HOST PAGE':info.kind==='stream'?'STREAM':'DIRECT'}</span>
           <span class="badge q ${q==='4K'?'q4k':''}">${esc(q)}</span>
           ${size ? `<span class="badge size">${esc(size)}</span>` : ''}
           ${exp ? `<span class="badge exp${expired?' expired':''}">⏳ ${esc(expiryLabel(exp))}</span>` : ''}
@@ -830,7 +964,7 @@
         ${desc ? `<div class="sc-desc">${esc(desc)}</div>` : ''}
         ${expired ? '<div class="relink-note">This signed link expired. <button data-action="relink">Get fresh links</button></div>' : ''}
         <div class="sc-actions">
-          <button class="btn btn-ghost" data-action="copy" data-i="${i}">📋 Copy</button>
+          <button class="btn btn-ghost" data-action="copy" data-i="${i}">📋 ${info.kind==='torrent'?'Copy magnet':'Copy'}</button>
           <a class="btn btn-primary" href="${esc(info.open)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">${label}</a>
         </div>
       </article>`;
@@ -850,6 +984,39 @@
   $('#getLinks').addEventListener('click', () => loadStreams());
   $('#refreshLinks').addEventListener('click', () => loadStreams());
   $('#toggleStreams').addEventListener('click', () => { state.showStreams = !state.showStreams; applyFilters(); });
+
+  $('#openSettings').addEventListener('click', openSettings);
+  $('#closeSettings').addEventListener('click', closeSettings);
+  $('#addAddon').addEventListener('click', addAddonFromInput);
+  $('#newAddonUrl').addEventListener('keydown', e => { if (e.key === 'Enter'){ e.preventDefault(); addAddonFromInput(); } });
+  $('#settingsModal').addEventListener('click', e => { if (e.target.id === 'settingsModal') closeSettings(); });
+  $('#saveAddons').addEventListener('click', () => {
+    readSettingsForm();
+    if (!ADDONS.length){ settingsMsg('Keep at least one source.'); return; }
+    state.sources = state.sources.filter(id => ADDONS.some(a => a.id === id));
+    if (!state.sources.length) state.sources = ADDONS.map(a => a.id);
+    saveAddons(); saveSources(); renderSourceToggles(); closeSettings();
+    toast('Sources saved');
+    if (!$('#streamsArea').hidden) loadStreams();
+  });
+  $('#resetAddons').addEventListener('click', () => {
+    ADDONS = DEFAULT_ADDONS.map(x => ({...x}));
+    state.sources = ADDONS.map(a => a.id);
+    saveAddons(); saveSources();
+    renderSettingsAddons(); renderSourceToggles();
+    settingsMsg('Defaults restored — save to keep.');
+  });
+  document.addEventListener('click', e => {
+    const rm = e.target.closest('[data-a-remove]');
+    if (!rm) return;
+    const row = rm.closest('[data-idx]');
+    const a = ADDONS[Number(row.dataset.idx)];
+    ADDONS = ADDONS.filter(x => x.id !== a.id);
+    state.sources = state.sources.filter(id => id !== a.id);
+    renderSettingsAddons(); renderSourceToggles();
+    settingsMsg(a.name + ' removed — save to keep.');
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#settingsModal').hidden) closeSettings(); });
 
   // Signed download links expire, so silently refresh very old results when the page is revisited
   document.addEventListener('visibilitychange', () => {
@@ -893,7 +1060,7 @@
       const s = state.visibleStreams[Number(act.dataset.i)];
       if (s){
         const exp = expiryOf(s);
-        const ok = await copyText(s.url);
+        const ok = await copyText(copyUrlFor(s));
         toast(ok ? (exp && exp <= Date.now() ? 'Copied — but this link is expired, get fresh links' : 'Link copied!') : 'Could not copy');
       }
     }
@@ -902,7 +1069,7 @@
   $('#copyAll').addEventListener('click', async () => {
     const links = state.visibleStreams.filter(s => { const e = expiryOf(s); return !e || e > Date.now(); });
     if (!links.length){ toast('All visible links are expired — refresh first'); return; }
-    toast((await copyText(links.map(s => s.url).join('\n'))) ? `Copied ${links.length} links` : 'Could not copy');
+    toast((await copyText(links.map(copyUrlFor).join('\n'))) ? `Copied ${links.length} links` : 'Could not copy');
   });
 
   // Keep countdown badges fresh without re-fetching

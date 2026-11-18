@@ -34,6 +34,19 @@ To publish, upload `index.html` to any static host (GitHub Pages, Netlify, Cloud
 
 All four APIs used (Cinemeta search/meta and the three addon stream endpoints) return `Access-Control-Allow-Origin: *`, so the site works as a pure client-side page with no proxy.
 
+## Sources & settings
+
+Tap ⚙️ in the header to manage addons:
+
+- **Enable/disable** any source, **rename** it, or **edit its base URL** (useful for putting your own PenguPlay token in).
+- **Add** another Stremio addon by pasting its manifest URL — the site reads the manifest for its name and then includes its stream results alongside the others.
+- **Remove** any source, or **Reset defaults** to restore the three original addons.
+- Everything is saved in `localStorage` in your browser; nothing is sent anywhere.
+
+## Torrent links
+
+If any added addon returns a torrent stream — a `magnet:` URL, a `.torrent` URL, or Stremio's `infoHash` field — ReelFind detects it automatically and shows a **TORRENT** badge with a **🧲 Open magnet** / **🧲 Download .torrent** button. `infoHash`-only streams are turned into a magnet link with the filename and any trackers the addon supplied. **Copy magnet** puts that magnet in the clipboard for a desktop/mobile torrent client.
+
 ## Notes
 
 - The PenguPlay auth token is embedded in `index.html` (in `ADDONS`). Anyone who can view the site can see and use that token — replace it with your own or a server-side proxy if that matters.
