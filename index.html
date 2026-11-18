@@ -256,6 +256,10 @@
   .sc-actions{display:flex;gap:8px}
   .sc-actions .btn{flex:1;padding:10px 8px;font-size:12.5px}
   .copy-all{margin:2px 0 14px}
+  .stream-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0 14px}
+  .stream-tools .btn{padding:9px 12px;font-size:12.5px}
+  .stream-tools .copy-all{margin:0}
+  .stream-tools .updated{font-size:11px;color:var(--muted)}
 
   .skeleton{height:96px;border-radius:14px;margin-bottom:10px;background:linear-gradient(100deg,#151a24 30%,#212938 50%,#151a24 70%);background-size:200% 100%;animation:shimmer 1.3s infinite}
   @keyframes shimmer{to{background-position:-200% 0}}
@@ -365,7 +369,7 @@
     </div>
 
     <div class="sources-row" id="sourceToggles" aria-label="Link sources"></div>
-    <div class="hint">Choose which sources to check. We only find download links — nothing is hosted here.</div>
+    <div class="hint">Choose which sources to check. We only find download links — nothing is hosted here. Signed links can expire; use Refresh links if a host reports an expired request.</div>
 
     <button class="btn btn-primary btn-block" id="getLinks">⚡ Get download links</button>
 
@@ -373,7 +377,11 @@
       <div class="source-status" id="sourceStatus"></div>
       <div class="filters" id="qualityFilters"></div>
       <div class="filters" id="sourceFilters"></div>
-      <button class="btn btn-ghost copy-all" id="copyAll">📋 Copy all visible links</button>
+      <div class="stream-tools">
+        <button class="btn btn-ghost" id="refreshLinks">🔄 Refresh links</button>
+        <button class="btn btn-ghost copy-all" id="copyAll">📋 Copy all visible links</button>
+        <span class="updated" id="linksUpdated"></span>
+      </div>
       <div id="streamList"></div>
     </div>
   </section>
@@ -410,6 +418,7 @@
     sources: loadSources(), streams:[], visibleStreams:[],
     quality:'all', sourceFilter:'all', status:{}, lastResult:null
   };
+  let lastLoad = 0;
 
   function loadSources(){
     try { const a = JSON.parse(localStorage.getItem('rf_sources')); if (Array.isArray(a) && a.length) return a; } catch {}
@@ -428,7 +437,7 @@
     const ctl = new AbortController();
     const t = setTimeout(() => ctl.abort(), timeout);
     try {
-      const res = await fetch(url, { signal: ctl.signal });
+      const res = await fetch(url, { signal: ctl.signal, cache: 'no-store' });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return await res.json();
     } finally { clearTimeout(t); }
@@ -664,10 +673,11 @@
     $('#sourceFilters').innerHTML = '';
     $('#streamList').innerHTML = '<div class="skeleton"></div>'.repeat(4);
     $('#copyAll').hidden = true;
+    $('#linksUpdated').textContent = 'Refreshing…';
 
     const results = await Promise.allSettled(active.map(async a => {
       try {
-        const d = await fetchJson(`${a.base}/stream/${type}/${id}.json`, 22000);
+        const d = await fetchJson(`${a.base}/stream/${type}/${id}.json?_=${Date.now()}`, 22000);
         return { a, streams: d.streams||[] };
       } catch (e) { return { a, error: e }; }
     }));
@@ -693,6 +703,8 @@
       return `<span class="status-pill"><span class="dot">○</span>${esc(a.name)} · none</span>`;
     }).join('');
 
+    lastLoad = Date.now();
+    $('#linksUpdated').textContent = 'Updated ' + new Date(lastLoad).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
     btn.disabled = false; btn.textContent = '⚡ Get download links';
     buildFilters();
     applyFilters();
@@ -750,6 +762,12 @@
     $('#detailView').hidden = true; $('#searchView').hidden = false; window.scrollTo({top:0});
   });
   $('#getLinks').addEventListener('click', loadStreams);
+  $('#refreshLinks').addEventListener('click', loadStreams);
+
+  // Signed download links expire, so silently refresh very old results when the page is revisited
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && !$('#streamsArea').hidden && lastLoad && Date.now() - lastLoad > 30 * 60 * 1000) loadStreams();
+  });
 
   document.addEventListener('click', async e => {
     const recent = e.target.closest('[data-recent]');
