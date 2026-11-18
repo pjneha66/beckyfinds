@@ -39,4 +39,8 @@ All four APIs used (Cinemeta search/meta and the three addon stream endpoints) r
 - The PenguPlay auth token is embedded in `index.html` (in `ADDONS`). Anyone who can view the site can see and use that token — replace it with your own or a server-side proxy if that matters.
 - The site hosts no media and does not guarantee any link works; links depend on the addons and expire over time.
 - Download links open in a new tab. Most hosts will show their own download page. ReelFind never plays or streams the files itself.
-- Pixeldrain blocks direct cross-site downloads (`hotlink_detected`). ReelFind turns `pixeldrain.dev/api/file/ID?download` links into the file's `pixeldrain.dev/u/ID` page — press **Download** there. The **Copy** button still copies the direct URL, which works in download managers or when pasted into the address bar.
+- Every link from every source is classified the same way:
+  - **HOST PAGE** — pixeldrain (`/api/file/ID` → `/u/ID`) and HubCloud links open a landing page; press **Download** there. This avoids pixeldrain's `hotlink_detected` cross-site block.
+  - **DIRECT** — R2 and PenguPlay file links open straight into the file. **Copy** gives the raw URL for download managers or pasting into the address bar.
+  - **STREAM** — HLS/DASH player links (all NoTorrent links and Pengu's `.mpd` links) are not downloads. They're badged **STREAM** and hidden by default; use **Show streams** to reveal them.
+- The **Copy** button always copies the original direct URL, regardless of how the Open button behaves.

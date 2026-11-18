@@ -252,6 +252,9 @@
   .badge.q{color:#c9f7d6;background:rgba(74,222,128,.1)}
   .badge.q.q4k{color:#ffe08a;background:rgba(255,209,102,.12)}
   .badge.size{color:var(--muted);background:rgba(255,255,255,.05)}
+  .badge.kind{color:#a8b6cf;background:rgba(255,255,255,.06)}
+  .badge.kind.host-page{color:#9ee7c2;background:rgba(74,222,128,.1)}
+  .badge.kind.stream{color:#f0b8ff;background:rgba(200,120,255,.12)}
   .sc-name{font-size:13.5px;font-weight:750;line-height:1.35;margin-bottom:4px;word-break:break-word}
   .sc-desc{font-size:11.5px;color:var(--muted);white-space:pre-line;line-height:1.45;margin-bottom:11px;word-break:break-word}
   .sc-actions{display:flex;gap:8px}
@@ -380,10 +383,11 @@
       <div class="filters" id="sourceFilters"></div>
       <div class="stream-tools">
         <button class="btn btn-ghost" id="refreshLinks">🔄 Refresh links</button>
+        <button class="btn btn-ghost" id="toggleStreams">👁 Show streams</button>
         <button class="btn btn-ghost copy-all" id="copyAll">📋 Copy all visible links</button>
         <span class="updated" id="linksUpdated"></span>
       </div>
-      <div class="hint" id="pdHint" hidden>ℹ️ Pixeldrain links open the file's host page — press <b>Download</b> there. Pixeldrain blocks direct cross-site downloads.</div>
+      <div class="hint" id="linkHint">ℹ️ <b>Host page</b>: press Download there. <b>Direct</b>: if the host blocks the click, use Copy and paste into a new tab or downloader. Stream-only links are hidden by default.</div>
       <div id="streamList"></div>
     </div>
   </section>
@@ -427,11 +431,25 @@
     return u;
   }
 
+  // Classify every link so each source is presented consistently:
+  // host-page = open a landing page and press Download there
+  // direct    = opens the file, Copy works in downloaders / address bar
+  // stream    = HLS/DASH player URL, not a download
+  function linkInfo(s){
+    const u = s.url || '';
+    let host = '';
+    try { host = new URL(u).hostname; } catch {}
+    if (/\.(m3u8|mpd)(\?|$)/i.test(u) || /\/redirect\?p=/i.test(u)) return { kind:'stream', open:u, host };
+    if (/^pixeldrain\.(dev|com)$/i.test(host) && /\/api\/file\//i.test(u)) return { kind:'host-page', open:openUrlFor(u), host };
+    if (/hubcloud\./i.test(host)) return { kind:'host-page', open:u, host };
+    return { kind:'direct', open:u, host };
+  }
+
   const state = {
     type:'all', query:'', results:[], detail:null, detailType:null,
     videos:[], season:null, episode:null,
     sources: loadSources(), streams:[], visibleStreams:[],
-    quality:'all', sourceFilter:'all', status:{}, lastResult:null
+    quality:'all', sourceFilter:'all', status:{}, lastResult:null, showStreams:false
   };
   let lastLoad = 0;
 
@@ -588,7 +606,7 @@
     state.detail = { imdb_id: imdbId, name: '' };
     state.detailType = type;
     state.videos = []; state.season = null; state.episode = null;
-    state.streams = []; state.visibleStreams = []; state.quality='all'; state.sourceFilter='all';
+    state.streams = []; state.visibleStreams = []; state.quality='all'; state.sourceFilter='all'; state.showStreams = false;
     state.status = {};
     $('#streamsArea').hidden = true;
     $('#streamList').innerHTML = '';
@@ -703,7 +721,8 @@
       const a = active[i];
       if (res.status !== 'fulfilled' || res.value.error){ state.status[a.id]='err'; return; }
       const usable = res.value.streams.filter(s => s.url);
-      state.status[a.id] = usable.length ? 'ok' : 'empty';
+      const downloads = usable.filter(s => linkInfo(s).kind !== 'stream');
+      state.status[a.id] = downloads.length ? 'ok' : (usable.length ? 'streams' : 'empty');
       usable.forEach(s => all.push({ ...s, _src: a.id, _srcName: a.name }));
     });
 
@@ -715,6 +734,7 @@
       const st = state.status[a.id];
       if (st === 'ok') return `<span class="status-pill ok"><span class="dot">●</span>${esc(a.name)} · links</span>`;
       if (st === 'err') return `<span class="status-pill err"><span class="dot">●</span>${esc(a.name)} · unavailable</span>`;
+      if (st === 'streams') return `<span class="status-pill"><span class="dot">○</span>${esc(a.name)} · streams only</span>`;
       return `<span class="status-pill"><span class="dot">○</span>${esc(a.name)} · none</span>`;
     }).join('');
 
@@ -740,22 +760,25 @@
   function applyFilters(){
     state.visibleStreams = state.streams.filter(s =>
       (state.quality==='all' || qualityOf(s)===state.quality) &&
-      (state.sourceFilter==='all' || s._src===state.sourceFilter)
+      (state.sourceFilter==='all' || s._src===state.sourceFilter) &&
+      (state.showStreams || linkInfo(s).kind !== 'stream')
     );
     $('#copyAll').hidden = state.visibleStreams.length === 0;
-    $('#pdHint').hidden = !state.visibleStreams.some(s => /pixeldrain/i.test(s.url));
+    $('#toggleStreams').textContent = state.showStreams ? '🙈 Hide streams' : '👁 Show streams';
     if (!state.visibleStreams.length){
-      $('#streamList').innerHTML = '<div class="state-box"><div class="big">📭</div><h3>No links here</h3><div>Try another quality, source, or episode.</div></div>';
+      const hiddenStreams = !state.showStreams && state.streams.some(s => linkInfo(s).kind === 'stream');
+      $('#streamList').innerHTML = `<div class="state-box"><div class="big">📭</div><h3>No downloads here</h3><div>Try another quality, source, or episode.</div>${hiddenStreams ? '<div style="margin-top:12px"><button class="btn btn-ghost" data-action="show-streams">Show stream-only links</button></div>' : ''}</div>`;
       return;
     }
     $('#streamList').innerHTML = state.visibleStreams.map((s,i) => {
       const q = qualityOf(s), size = sizeOf(s);
       const desc = s.description || s.title || '';
-      const openUrl = openUrlFor(s.url);
-      const hostPage = openUrl !== s.url;
+      const info = linkInfo(s);
+      const label = info.kind==='host-page' ? 'Open host page ↗' : info.kind==='stream' ? 'Open stream ↗' : 'Open / Download ↗';
       return `<article class="stream-card">
         <div class="sc-top">
           <span class="badge src ${esc(s._src)}">${esc(s._srcName)}</span>
+          <span class="badge kind ${esc(info.kind)}">${info.kind==='host-page'?'HOST PAGE':info.kind==='stream'?'STREAM':'DIRECT'}</span>
           <span class="badge q ${q==='4K'?'q4k':''}">${esc(q)}</span>
           ${size ? `<span class="badge size">${esc(size)}</span>` : ''}
         </div>
@@ -763,7 +786,7 @@
         ${desc ? `<div class="sc-desc">${esc(desc)}</div>` : ''}
         <div class="sc-actions">
           <button class="btn btn-ghost" data-action="copy" data-i="${i}">📋 Copy</button>
-          <a class="btn btn-primary" href="${esc(openUrl)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">${hostPage ? 'Open host page ↗' : 'Open / Download ↗'}</a>
+          <a class="btn btn-primary" href="${esc(info.open)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">${label}</a>
         </div>
       </article>`;
     }).join('');
@@ -781,6 +804,7 @@
   });
   $('#getLinks').addEventListener('click', loadStreams);
   $('#refreshLinks').addEventListener('click', loadStreams);
+  $('#toggleStreams').addEventListener('click', () => { state.showStreams = !state.showStreams; applyFilters(); });
 
   // Signed download links expire, so silently refresh very old results when the page is revisited
   document.addEventListener('visibilitychange', () => {
@@ -814,6 +838,8 @@
 
     const sf = e.target.closest('[data-srcfilter]');
     if (sf){ state.sourceFilter = sf.dataset.srcfilter; buildFilters(); applyFilters(); return; }
+
+    if (e.target.closest('[data-action="show-streams"]')){ state.showStreams = true; applyFilters(); return; }
 
     const act = e.target.closest('[data-action="copy"]');
     if (act){
