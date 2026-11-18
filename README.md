@@ -44,3 +44,4 @@ All four APIs used (Cinemeta search/meta and the three addon stream endpoints) r
   - **DIRECT** — R2 and PenguPlay file links open straight into the file. **Copy** gives the raw URL for download managers or pasting into the address bar.
   - **STREAM** — HLS/DASH player links (all NoTorrent links and Pengu's `.mpd` links) are not downloads. They're badged **STREAM** and hidden by default; use **Show streams** to reveal them.
 - The **Copy** button always copies the original direct URL, regardless of how the Open button behaves.
+- R2/S3 signed links expire a few hours after the addon creates them. ReelFind reads `X-Amz-Date` + `X-Amz-Expires`, shows a ⏳ countdown on each link, automatically fetches fresh links shortly before expiry, and offers a one-tap **Get fresh links** action on any expired card. Expired links are skipped by **Copy all**.

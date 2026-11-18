@@ -255,6 +255,10 @@
   .badge.kind{color:#a8b6cf;background:rgba(255,255,255,.06)}
   .badge.kind.host-page{color:#9ee7c2;background:rgba(74,222,128,.1)}
   .badge.kind.stream{color:#f0b8ff;background:rgba(200,120,255,.12)}
+  .badge.exp{color:#ffd8a8;background:rgba(255,180,80,.12)}
+  .badge.exp.expired{color:#ffc9c9;background:rgba(248,113,113,.16)}
+  .relink-note{font-size:11px;color:#ffc9c9;margin-top:7px}
+  .relink-note button{background:none;border:0;color:var(--accent-2);font-weight:700;padding:0 2px;font-size:11px}
   .sc-name{font-size:13.5px;font-weight:750;line-height:1.35;margin-bottom:4px;word-break:break-word}
   .sc-desc{font-size:11.5px;color:var(--muted);white-space:pre-line;line-height:1.45;margin-bottom:11px;word-break:break-word}
   .sc-actions{display:flex;gap:8px}
@@ -387,7 +391,7 @@
         <button class="btn btn-ghost copy-all" id="copyAll">📋 Copy all visible links</button>
         <span class="updated" id="linksUpdated"></span>
       </div>
-      <div class="hint" id="linkHint">ℹ️ <b>Host page</b>: press Download there. <b>Direct</b>: if the host blocks the click, use Copy and paste into a new tab or downloader. Stream-only links are hidden by default.</div>
+      <div class="hint" id="linkHint">ℹ️ <b>Host page</b>: press Download there. <b>Direct</b>: if blocked, Copy and paste into a new tab or downloader. ⏳ countdown = signed link expiry — links refresh automatically before they die. Stream-only links are hidden by default.</div>
       <div id="streamList"></div>
     </div>
   </section>
@@ -445,13 +449,33 @@
     return { kind:'direct', open:u, host };
   }
 
+  // S3/R2 presigned URLs carry their own expiry (usually a few hours).
+  function expiryOf(s){
+    try {
+      const x = new URL(s.url || '');
+      const d = x.searchParams.get('X-Amz-Date'), e = x.searchParams.get('X-Amz-Expires');
+      if (d && e && d.length >= 15){
+        const ms = Date.parse(`${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}T${d.slice(9,11)}:${d.slice(11,13)}:${d.slice(13,15)}Z`);
+        if (!isNaN(ms)) return ms + Number(e) * 1000;
+      }
+    } catch {}
+    return 0;
+  }
+  function expiryLabel(t){
+    if (!t) return '';
+    const left = t - Date.now();
+    if (left <= 0) return 'EXPIRED';
+    const mins = Math.floor(left / 60000), hrs = Math.floor(mins / 60);
+    return hrs ? `${hrs}h ${mins % 60}m left` : `${mins}m left`;
+  }
+
   const state = {
     type:'all', query:'', results:[], detail:null, detailType:null,
     videos:[], season:null, episode:null,
     sources: loadSources(), streams:[], visibleStreams:[],
     quality:'all', sourceFilter:'all', status:{}, lastResult:null, showStreams:false
   };
-  let lastLoad = 0;
+  let lastLoad = 0, expiryTimer, autoRefreshed = false;
 
   function loadSources(){
     try { const a = JSON.parse(localStorage.getItem('rf_sources')); if (Array.isArray(a) && a.length) return a; } catch {}
@@ -693,7 +717,9 @@
     return m ? m[1] : '';
   }
 
-  async function loadStreams(){
+  async function loadStreams(fromTimer=false){
+    if (!fromTimer) autoRefreshed = false;
+    clearTimeout(expiryTimer);
     const id = currentStreamId();
     const type = state.detailType;
     const active = ADDONS.filter(a => state.sources.includes(a.id));
@@ -743,6 +769,22 @@
     btn.disabled = false; btn.textContent = '⚡ Get download links';
     buildFilters();
     applyFilters();
+    scheduleExpiryRefresh();
+  }
+
+  // R2/S3 links die a few hours after the addon signs them. Refresh shortly before the earliest expiry.
+  function scheduleExpiryRefresh(){
+    const times = state.streams.map(expiryOf).filter(Boolean);
+    if (!times.length) return;
+    const soonest = Math.min(...times);
+    const delay = soonest - Date.now() - 5 * 60 * 1000;
+    if (delay <= 0){
+      if (autoRefreshed) return;
+      autoRefreshed = true;
+      expiryTimer = setTimeout(() => { if (!$('#streamsArea').hidden) loadStreams(true); }, 2000);
+    } else {
+      expiryTimer = setTimeout(() => { if (!$('#streamsArea').hidden) loadStreams(true); }, Math.min(delay, 24 * 60 * 60 * 1000));
+    }
   }
 
   function buildFilters(){
@@ -774,6 +816,7 @@
       const q = qualityOf(s), size = sizeOf(s);
       const desc = s.description || s.title || '';
       const info = linkInfo(s);
+      const exp = expiryOf(s), expired = exp > 0 && exp <= Date.now();
       const label = info.kind==='host-page' ? 'Open host page ↗' : info.kind==='stream' ? 'Open stream ↗' : 'Open / Download ↗';
       return `<article class="stream-card">
         <div class="sc-top">
@@ -781,9 +824,11 @@
           <span class="badge kind ${esc(info.kind)}">${info.kind==='host-page'?'HOST PAGE':info.kind==='stream'?'STREAM':'DIRECT'}</span>
           <span class="badge q ${q==='4K'?'q4k':''}">${esc(q)}</span>
           ${size ? `<span class="badge size">${esc(size)}</span>` : ''}
+          ${exp ? `<span class="badge exp${expired?' expired':''}">⏳ ${esc(expiryLabel(exp))}</span>` : ''}
         </div>
         <div class="sc-name">${esc(s.name||s._srcName)}</div>
         ${desc ? `<div class="sc-desc">${esc(desc)}</div>` : ''}
+        ${expired ? '<div class="relink-note">This signed link expired. <button data-action="relink">Get fresh links</button></div>' : ''}
         <div class="sc-actions">
           <button class="btn btn-ghost" data-action="copy" data-i="${i}">📋 Copy</button>
           <a class="btn btn-primary" href="${esc(info.open)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">${label}</a>
@@ -802,8 +847,8 @@
   $('#backBtn').addEventListener('click', () => {
     $('#detailView').hidden = true; $('#searchView').hidden = false; window.scrollTo({top:0});
   });
-  $('#getLinks').addEventListener('click', loadStreams);
-  $('#refreshLinks').addEventListener('click', loadStreams);
+  $('#getLinks').addEventListener('click', () => loadStreams());
+  $('#refreshLinks').addEventListener('click', () => loadStreams());
   $('#toggleStreams').addEventListener('click', () => { state.showStreams = !state.showStreams; applyFilters(); });
 
   // Signed download links expire, so silently refresh very old results when the page is revisited
@@ -841,17 +886,27 @@
 
     if (e.target.closest('[data-action="show-streams"]')){ state.showStreams = true; applyFilters(); return; }
 
+    if (e.target.closest('[data-action="relink"]')){ loadStreams(); return; }
+
     const act = e.target.closest('[data-action="copy"]');
     if (act){
       const s = state.visibleStreams[Number(act.dataset.i)];
-      if (s) toast((await copyText(s.url)) ? 'Link copied!' : 'Could not copy');
+      if (s){
+        const exp = expiryOf(s);
+        const ok = await copyText(s.url);
+        toast(ok ? (exp && exp <= Date.now() ? 'Copied — but this link is expired, get fresh links' : 'Link copied!') : 'Could not copy');
+      }
     }
   });
 
   $('#copyAll').addEventListener('click', async () => {
-    const txt = state.visibleStreams.map(s => s.url).join('\n');
-    toast((await copyText(txt)) ? `Copied ${state.visibleStreams.length} links` : 'Could not copy');
+    const links = state.visibleStreams.filter(s => { const e = expiryOf(s); return !e || e > Date.now(); });
+    if (!links.length){ toast('All visible links are expired — refresh first'); return; }
+    toast((await copyText(links.map(s => s.url).join('\n'))) ? `Copied ${links.length} links` : 'Could not copy');
   });
+
+  // Keep countdown badges fresh without re-fetching
+  setInterval(() => { if (!$('#streamsArea').hidden && state.streams.length) applyFilters(); }, 60000);
 
   // ---------- init ----------
   renderRecent();
