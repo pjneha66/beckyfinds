@@ -39,3 +39,4 @@ All four APIs used (Cinemeta search/meta and the three addon stream endpoints) r
 - The PenguPlay auth token is embedded in `index.html` (in `ADDONS`). Anyone who can view the site can see and use that token — replace it with your own or a server-side proxy if that matters.
 - The site hosts no media and does not guarantee any link works; links depend on the addons and expire over time.
 - Download links open in a new tab. Most hosts will show their own download page. ReelFind never plays or streams the files itself.
+- Pixeldrain blocks direct cross-site downloads (`hotlink_detected`). ReelFind turns `pixeldrain.dev/api/file/ID?download` links into the file's `pixeldrain.dev/u/ID` page — press **Download** there. The **Copy** button still copies the direct URL, which works in download managers or when pasted into the address bar.

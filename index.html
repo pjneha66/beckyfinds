@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0a0b10">
+<meta name="referrer" content="no-referrer">
 <meta name="description" content="Search movies and series and find download links from multiple Stremio addons.">
 <title>ReelFind — Movie & Series Download Finder</title>
 <style>
@@ -382,6 +383,7 @@
         <button class="btn btn-ghost copy-all" id="copyAll">📋 Copy all visible links</button>
         <span class="updated" id="linksUpdated"></span>
       </div>
+      <div class="hint" id="pdHint" hidden>ℹ️ Pixeldrain links open the file's host page — press <b>Download</b> there. Pixeldrain blocks direct cross-site downloads.</div>
       <div id="streamList"></div>
     </div>
   </section>
@@ -411,6 +413,19 @@
   const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const safeUrl = u => { try { const x = new URL(u); return (x.protocol==='http:'||x.protocol==='https:') ? u : ''; } catch { return ''; } };
+
+  // Pixeldrain blocks direct cross-site downloads (hotlink protection).
+  // Opening its /u/ID page lets the user press Download from the same origin.
+  function openUrlFor(u){
+    try {
+      const x = new URL(u);
+      if (/^pixeldrain\.(dev|com)$/i.test(x.hostname)){
+        const m = x.pathname.match(/^\/api\/file\/([^/]+)/);
+        if (m) return `https://${x.hostname}/u/${m[1]}`;
+      }
+    } catch {}
+    return u;
+  }
 
   const state = {
     type:'all', query:'', results:[], detail:null, detailType:null,
@@ -728,6 +743,7 @@
       (state.sourceFilter==='all' || s._src===state.sourceFilter)
     );
     $('#copyAll').hidden = state.visibleStreams.length === 0;
+    $('#pdHint').hidden = !state.visibleStreams.some(s => /pixeldrain/i.test(s.url));
     if (!state.visibleStreams.length){
       $('#streamList').innerHTML = '<div class="state-box"><div class="big">📭</div><h3>No links here</h3><div>Try another quality, source, or episode.</div></div>';
       return;
@@ -735,6 +751,8 @@
     $('#streamList').innerHTML = state.visibleStreams.map((s,i) => {
       const q = qualityOf(s), size = sizeOf(s);
       const desc = s.description || s.title || '';
+      const openUrl = openUrlFor(s.url);
+      const hostPage = openUrl !== s.url;
       return `<article class="stream-card">
         <div class="sc-top">
           <span class="badge src ${esc(s._src)}">${esc(s._srcName)}</span>
@@ -745,7 +763,7 @@
         ${desc ? `<div class="sc-desc">${esc(desc)}</div>` : ''}
         <div class="sc-actions">
           <button class="btn btn-ghost" data-action="copy" data-i="${i}">📋 Copy</button>
-          <a class="btn btn-primary" href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">Open / Download ↗</a>
+          <a class="btn btn-primary" href="${esc(openUrl)}" target="_blank" rel="noopener noreferrer" referrerpolicy="no-referrer">${hostPage ? 'Open host page ↗' : 'Open / Download ↗'}</a>
         </div>
       </article>`;
     }).join('');
