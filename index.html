@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0a0b10">
 <meta name="referrer" content="no-referrer">
 <meta name="description" content="Search movies and series and find download links from multiple Stremio addons.">
-<title>ReelFind — Movie & Series Download Finder</title>
+<title>Beckyfinds — Movie & Series Download Finder</title>
 <style>
   :root{
     --bg:#070912;
@@ -536,13 +536,95 @@
   }
   #toast.show{opacity:1;transform:translate(-50%,0)}
 
+  /* ---------- glass surface pass ---------- */
+  :root{
+    --glass:rgba(18,26,45,.56);
+    --glass-strong:rgba(15,22,39,.76);
+    --glass-line:rgba(255,255,255,.13);
+    --glass-shadow:0 14px 42px rgba(2,6,23,.5),inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  .topbar{
+    background:rgba(8,11,22,.56)!important;
+    backdrop-filter:blur(24px) saturate(180%)!important;
+    -webkit-backdrop-filter:blur(24px) saturate(180%)!important;
+  }
+  .search-intro{position:relative;isolation:isolate}
+  .search-intro::before{
+    content:"";position:absolute;inset:-18px -10px;z-index:-1;border-radius:28px;
+    background:linear-gradient(140deg,rgba(139,92,246,.16),rgba(34,211,238,.09));
+    border:1px solid rgba(255,255,255,.09);
+    backdrop-filter:blur(16px) saturate(150%);
+    -webkit-backdrop-filter:blur(16px) saturate(150%);
+    box-shadow:0 20px 50px rgba(2,6,23,.38);
+  }
+  .input-wrap{
+    background:var(--glass)!important;
+    backdrop-filter:blur(18px) saturate(160%)!important;
+    -webkit-backdrop-filter:blur(18px) saturate(160%)!important;
+    border-color:var(--glass-line)!important;
+  }
+  .segmented{
+    background:rgba(15,22,38,.55)!important;
+    backdrop-filter:blur(16px)!important;
+    -webkit-backdrop-filter:blur(16px)!important;
+  }
+  .picker{
+    background:var(--glass)!important;
+    backdrop-filter:blur(20px) saturate(160%)!important;
+    -webkit-backdrop-filter:blur(20px) saturate(160%)!important;
+    border-color:var(--glass-line)!important;
+    box-shadow:var(--glass-shadow)!important;
+  }
+  .hero{
+    background:rgba(15,22,38,.52)!important;
+    backdrop-filter:blur(18px) saturate(150%)!important;
+    -webkit-backdrop-filter:blur(18px) saturate(150%)!important;
+  }
+  .poster-wrap{
+    border-color:rgba(255,255,255,.15)!important;
+    box-shadow:0 14px 34px rgba(2,6,23,.5),inset 0 1px 0 rgba(255,255,255,.09)!important;
+  }
+  .state-box{
+    background:var(--glass)!important;
+    backdrop-filter:blur(16px)!important;
+    -webkit-backdrop-filter:blur(16px)!important;
+    border-color:var(--glass-line)!important;
+  }
+  .stream-card{
+    background:var(--glass)!important;
+    backdrop-filter:blur(18px) saturate(150%)!important;
+    -webkit-backdrop-filter:blur(18px) saturate(150%)!important;
+    border-color:var(--glass-line)!important;
+    box-shadow:var(--glass-shadow)!important;
+  }
+  .stream-tools{
+    background:rgba(255,255,255,.045)!important;
+    backdrop-filter:blur(14px)!important;
+    -webkit-backdrop-filter:blur(14px)!important;
+  }
+  .modal-card{
+    background:rgba(14,20,36,.8)!important;
+    backdrop-filter:blur(26px) saturate(170%)!important;
+    -webkit-backdrop-filter:blur(26px) saturate(170%)!important;
+    border-color:rgba(255,255,255,.15)!important;
+  }
+  .chip,.src-chip,.filter-chip,.btn-ghost{
+    backdrop-filter:blur(10px)!important;
+    -webkit-backdrop-filter:blur(10px)!important;
+  }
+  #toast{
+    background:rgba(17,25,43,.82)!important;
+    backdrop-filter:blur(20px) saturate(160%)!important;
+    -webkit-backdrop-filter:blur(20px) saturate(160%)!important;
+  }
+
 </style>
 </head>
 <body>
 
 <header class="topbar">
   <div class="logo">🎬</div>
-  <div class="brand">ReelFind<small>Link finder · no hosting</small></div>
+  <div class="brand">Beckyfinds<small>Link finder · no hosting</small></div>
   <div class="pill">⚡ Links only</div>
   <button class="icon-btn" id="openSettings" aria-label="Settings" title="Settings">⚙️</button>
 </header>
@@ -593,7 +675,7 @@
       <div class="state-box" style="margin-top:18px">
         <div class="big">🍿</div>
         <h3>Find any movie or series</h3>
-        <div>Pick a title, choose an episode, and grab links from your addons. ReelFind only finds links — it never hosts or streams a file.</div>
+        <div>Pick a title, choose an episode, and grab links from your addons. Beckyfinds only finds links — it never hosts or streams a file.</div>
       </div>
     </div>
 
@@ -669,7 +751,7 @@
   </section>
 
   <div class="footer-note">
-    ReelFind is a link finder, not a streaming service. Nothing is hosted, stored or played here.<br>
+    Beckyfinds is a link finder, not a streaming service. Nothing is hosted, stored or played here.<br>
     Links come from your third-party Stremio addons and open in a new tab.<br>
     Use responsibly and respect local laws.
   </div>
@@ -1395,7 +1477,7 @@
         }).join('\n\n');
         files.push({
           name: `${showName}/${epTag} - ${title}.txt`,
-          text: `${showName} — ${epTag} — ${v.name || ''}\n${'='.repeat(60)}\n\n${body}\n\nNote: links expire; come back to ReelFind to refresh them.\n`
+          text: `${showName} — ${epTag} — ${v.name || ''}\n${'='.repeat(60)}\n\n${body}\n\nNote: links expire; come back to Beckyfinds to refresh them.\n`
         });
         const best = bestDownload(filtered);
         if (best) urlLines.push(`${copyUrlFor(best)}`);
@@ -1419,14 +1501,14 @@
     });
     files.unshift({
       name: `${showName}/README.txt`,
-      text: `ReelFind — ${showName} ${seasonTag}\nGenerated ${new Date().toLocaleString()}\n\n` +
+      text: `Beckyfinds — ${showName} ${seasonTag}\nGenerated ${new Date().toLocaleString()}\n\n` +
         `This ZIP contains LINK LISTS ONLY — no video files.\n\n` +
         `- "${showName} - ${seasonTag} - links.txt": one bare download URL per episode, for a\n` +
         `  download manager (JDownloader, aria2, IDM, curl -O, etc.).\n` +
         `- One .txt per episode: every link found, with source, quality and size.\n\n` +
         `${withLinks} of ${eps.length} episodes had at least one download link.\n` +
-        `Links are signed/hosted by third-party addons and expire. Re-run the ZIP from ReelFind\n` +
-        `to get fresh ones. ReelFind hosts and stores nothing.\n`
+        `Links are signed/hosted by third-party addons and expire. Re-run the ZIP from Beckyfinds\n` +
+        `to get fresh ones. Beckyfinds hosts and stores nothing.\n`
     });
 
     saveBlob(zipStore(files), `${showName} - ${seasonTag}.zip`);
@@ -1456,7 +1538,7 @@
     });
     files.push({
       name: `${showName}${titleTag} - README.txt`,
-      text: `ReelFind — ${showName}${titleTag}\nGenerated ${new Date().toLocaleString()}\n\nThis ZIP contains LINK LISTS ONLY — no video files.\n\nOne bare URL per line for download managers, and a labeled list.\n`
+      text: `Beckyfinds — ${showName}${titleTag}\nGenerated ${new Date().toLocaleString()}\n\nThis ZIP contains LINK LISTS ONLY — no video files.\n\nOne bare URL per line for download managers, and a labeled list.\n`
     });
     files.push({
       name: `${showName}${titleTag} - links.txt`,

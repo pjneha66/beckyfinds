@@ -1,8 +1,8 @@
-# ReelFind
+# Beckyfinds
 
 Mobile-first, single-page HTML site for searching movies/series and finding download links from three Stremio addons.
 
-> **This is a downloader / link finder, not a streaming service.** ReelFind hosts, stores, streams and plays no media. It only searches addons for download links and hands those links to you.
+> **This is a downloader / link finder, not a streaming service.** Beckyfinds hosts, stores, streams and plays no media. It only searches addons for download links and hands those links to you.
 
 ## Run it
 
@@ -47,16 +47,16 @@ Tap ⚙️ in the header to manage addons:
 
 ## Torrent links
 
-If any added addon returns a torrent stream — a `magnet:` URL, a `.torrent` URL, or Stremio's `infoHash` field — ReelFind detects it automatically and shows a **TORRENT** badge with a **🧲 Open magnet** / **🧲 Download .torrent** button. `infoHash`-only streams are turned into a magnet link with the filename and any trackers the addon supplied. **Copy magnet** puts that magnet in the clipboard for a desktop/mobile torrent client.
+If any added addon returns a torrent stream — a `magnet:` URL, a `.torrent` URL, or Stremio's `infoHash` field — Beckyfinds detects it automatically and shows a **TORRENT** badge with a **🧲 Open magnet** / **🧲 Download .torrent** button. `infoHash`-only streams are turned into a magnet link with the filename and any trackers the addon supplied. **Copy magnet** puts that magnet in the clipboard for a desktop/mobile torrent client.
 
 ## Notes
 
 - The PenguPlay auth token is embedded in `index.html` (in `ADDONS`). Anyone who can view the site can see and use that token — replace it with your own or a server-side proxy if that matters.
 - The site hosts no media and does not guarantee any link works; links depend on the addons and expire over time.
-- Download links open in a new tab. Most hosts will show their own download page. ReelFind never plays or streams the files itself.
+- Download links open in a new tab. Most hosts will show their own download page. Beckyfinds never plays or streams the files itself.
 - Every link from every source is classified the same way:
   - **HOST PAGE** — pixeldrain (`/api/file/ID` → `/u/ID`) and HubCloud links open a landing page; press **Download** there. This avoids pixeldrain's `hotlink_detected` cross-site block.
   - **DIRECT** — R2 and PenguPlay file links open straight into the file. **Copy** gives the raw URL for download managers or pasting into the address bar.
   - **STREAM** — HLS/DASH player links (all NoTorrent links and Pengu's `.mpd` links) are not downloads. They're badged **STREAM** and hidden by default; use **Show streams** to reveal them.
 - The **Copy** button always copies the original direct URL, regardless of how the Open button behaves.
-- R2/S3 signed links expire a few hours after the addon creates them. ReelFind reads `X-Amz-Date` + `X-Amz-Expires`, shows a ⏳ countdown on each link, automatically fetches fresh links shortly before expiry, and offers a one-tap **Get fresh links** action on any expired card. Expired links are skipped by **Copy all**.
+- R2/S3 signed links expire a few hours after the addon creates them. Beckyfinds reads `X-Amz-Date` + `X-Amz-Expires`, shows a ⏳ countdown on each link, automatically fetches fresh links shortly before expiry, and offers a one-tap **Get fresh links** action on any expired card. Expired links are skipped by **Copy all**.
