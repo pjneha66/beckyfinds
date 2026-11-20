@@ -418,6 +418,7 @@
         <button class="btn btn-ghost" id="refreshLinks">🔄 Refresh links</button>
         <button class="btn btn-ghost" id="toggleStreams">👁 Show streams</button>
         <button class="btn btn-ghost copy-all" id="copyAll">📋 Copy all visible links</button>
+        <button class="btn btn-ghost" id="zipVisible">📦 ZIP visible links</button>
         <span class="updated" id="linksUpdated"></span>
       </div>
       <div class="hint" id="linkHint">ℹ️ <b>Host page</b>: press Download there. <b>Direct</b>: if blocked, Copy and paste into a new tab or downloader. ⏳ countdown = signed link expiry — links refresh automatically before they die. Stream-only links are hidden by default.</div>
@@ -1191,6 +1192,42 @@
     toast(`ZIP with ${withLinks} episode${withLinks === 1 ? '' : 's'} saved`);
   }
 
+  async function downloadVisibleZip(){
+    const streams = state.visibleStreams || [];
+    if (!streams.length){ toast('No visible links to zip'); return; }
+    const showName = safeName(state.detail.name || 'Title', 'Title');
+    let titleTag = '';
+    if (state.detailType === 'series'){
+      titleTag = ` S${pad2(state.season)}E${pad2(state.episode)}`;
+    } else {
+      titleTag = '';
+    }
+    const files = [];
+    const urls = [];
+    const lines = [];
+    streams.forEach(s => {
+      const info = linkInfo(s);
+      const bits = [s._srcName, qualityOf(s), sizeOf(s), info.kind].filter(Boolean).join(' · ');
+      lines.push(`# ${bits}`);
+      lines.push(copyUrlFor(s));
+      urls.push(copyUrlFor(s));
+    });
+    files.push({
+      name: `${showName}${titleTag} - README.txt`,
+      text: `ReelFind — ${showName}${titleTag}\nGenerated ${new Date().toLocaleString()}\n\nThis ZIP contains LINK LISTS ONLY — no video files.\n\nOne bare URL per line for download managers, and a labeled list.\n`
+    });
+    files.push({
+      name: `${showName}${titleTag} - links.txt`,
+      text: `${urls.join('\n')}\n`
+    });
+    files.push({
+      name: `${showName}${titleTag} - links-with-labels.txt`,
+      text: `${lines.join('\n')}\n`
+    });
+    saveBlob(zipStore(files), `${showName}${titleTag} - visible.zip`.replace(/\s+/g,'_'));
+    toast(`ZIP of ${streams.length} visible links saved`);
+  }
+
   // ---------- events ----------
   $('#searchForm').addEventListener('submit', e => { e.preventDefault(); doSearch(); });
   $('#clearQ').addEventListener('click', () => { $('#q').value=''; $('#clearQ').hidden=true; $('#q').focus(); });
@@ -1203,6 +1240,7 @@
   });
   $('#getLinks').addEventListener('click', () => loadStreams());
   $('#zipSeason').addEventListener('click', downloadSeasonZip);
+  $('#zipVisible').addEventListener('click', downloadVisibleZip);
   $('#refreshLinks').addEventListener('click', () => loadStreams());
   $('#toggleStreams').addEventListener('click', () => { state.showStreams = !state.showStreams; applyFilters(); });
 
