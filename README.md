@@ -17,7 +17,7 @@ python3 -m http.server 8080
 
 Then visit `http://127.0.0.1:8080`.
 
-**Live site:** https://pjneha66.github.io/reelfind/
+**Live site:** https://pjneha66.github.io/beckyfinds/
 
 To publish, upload `index.html` to any static host (GitHub Pages, Netlify, Cloudflare Pages, etc.).
 
