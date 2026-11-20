@@ -1102,7 +1102,10 @@
     const btn = $('#zipSeason');
     const eps = seasonEpisodes();
     if (!eps.length){ toast('No episodes found for this season'); return; }
-    const active = ADDONS.filter(a => state.sources.includes(a.id));
+    let active = ADDONS.filter(a => state.sources.includes(a.id));
+    if (state.sourceFilter !== 'all'){
+      active = active.filter(a => a.id === state.sourceFilter);
+    }
     if (!active.length){ toast('Select at least one source'); return; }
 
     const original = btn.textContent;
@@ -1132,7 +1135,10 @@
     let withLinks = 0;
     eps.forEach((v, i) => {
       const streams = byEpisode[i] || [];
-      const downloads = streams.filter(s => linkInfo(s).kind !== 'stream');
+      let filtered = streams.filter(s => linkInfo(s).kind !== 'stream');
+      if (state.sourceFilter !== 'all') filtered = filtered.filter(s => s._src === state.sourceFilter);
+      if (state.quality !== 'all') filtered = filtered.filter(s => qualityOf(s) === state.quality);
+      const downloads = filtered;
       const epTag = `${seasonTag}E${pad2(v.episode)}`;
       const title = safeName(v.name || v.title || `Episode ${v.episode}`, `Episode ${v.episode}`);
       if (downloads.length){
@@ -1148,7 +1154,7 @@
           name: `${showName}/${epTag} - ${title}.txt`,
           text: `${showName} — ${epTag} — ${v.name || ''}\n${'='.repeat(60)}\n\n${body}\n\nNote: links expire; come back to ReelFind to refresh them.\n`
         });
-        const best = bestDownload(streams);
+        const best = bestDownload(filtered);
         if (best) urlLines.push(`${copyUrlFor(best)}`);
       } else {
         files.push({
