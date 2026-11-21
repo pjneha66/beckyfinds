@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Praha Media Hub</title>
+  <style>
+    :root {
+      --bg: #090e11;
+      --card-bg: #121c21;
+      --card-border: #1b2f33;
+      --card-hover: #16262c;
+      --primary: #10b981;
+      --primary-glow: rgba(16, 185, 129, 0.25);
+      --accent: #06b6d4;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --tab-active-bg: #10b981;
+      --tab-active-text: #042f2e;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 16px 14px 60px;
+    }
+    header {
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .header-logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 6px;
+    }
+    .header-logo svg {
+      width: 28px;
+      height: 28px;
+      fill: var(--primary);
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #34d399, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle {
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.2px;
+    }
+    .search-box {
+      margin: 12px 0 16px;
+      position: relative;
+    }
+    .search-input {
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 12px 14px 12px 40px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
+    }
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      fill: var(--text-muted);
+      pointer-events: none;
+    }
+    /* Tabs Navigation */
+    .tabs-container {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 10px;
+      margin-bottom: 14px;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .tabs-container::-webkit-scrollbar {
+      display: none;
+    }
+    .tab-btn {
+      flex: 0 0 auto;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .tab-btn.active {
+      background: var(--tab-active-bg);
+      color: var(--tab-active-text);
+      border-color: var(--tab-active-bg);
+      box-shadow: 0 2px 8px var(--primary-glow);
+    }
+    /* Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      gap: 10px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 12px;
+      text-decoration: none;
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.15s, border-color 0.2s, background 0.2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .card:active {
+      transform: scale(0.97);
+      background: var(--card-hover);
+      border-color: var(--primary);
+    }
+    .card-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+    .card-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .badge {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 6px;
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--accent);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 4px;
+      line-height: 1.2;
+    }
+    .card-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+      line-height: 1.35;
+      margin-bottom: 10px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--primary);
+      padding-top: 6px;
+      border-top: 1px dashed rgba(27, 47, 51, 0.8);
+    }
+    .empty-state {
+      display: none;
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 40px 10px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-logo">
+      <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      <h1>Praha Media Hub</h1>
+    </div>
+    <div class="subtitle">Categorized Hub &bull; Direct Secure Streaming & Reading</div>
+  </header>
+
+  <div class="search-box">
+    <svg class="search-icon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+    <input type="text" id="searchInput" class="search-input" placeholder="Search services, comics, manga, movies..." oninput="filterHub()">
+  </div>
+
+  <div class="tabs-container" id="tabsBar">
+    <button class="tab-btn active" data-target="all" onclick="selectTab('all', this)">All</button>
+    <button class="tab-btn" data-target="comics" onclick="selectTab('comics', this)">Comics</button>
+    <button class="tab-btn" data-target="manga" onclick="selectTab('manga', this)">Manga</button>
+    <button class="tab-btn" data-target="books" onclick="selectTab('books', this)">Books & Novels</button>
+    <button class="tab-btn" data-target="movies" onclick="selectTab('movies', this)">Movies & Series</button>
+    <button class="tab-btn" data-target="anime" onclick="selectTab('anime', this)">Anime & Cartoons</button>
+    <button class="tab-btn" data-target="drama" onclick="selectTab('drama', this)">K-Drama</button>
+    <button class="tab-btn" data-target="sports" onclick="selectTab('sports', this)">Live TV & Sports</button>
+    <button class="tab-btn" data-target="downloads" onclick="selectTab('downloads', this)">Downloads</button>
+    <button class="tab-btn" data-target="beckyfinds" onclick="selectTab('beckyfinds', this)">BeckyFinds Vault</button>
+    <button class="tab-btn" data-target="tools" onclick="selectTab('tools', this)">Core Tools</button>
+  </div>
+
+  <div class="grid" id="itemsGrid">
+    <!-- COMICS -->
+    <a href="https://batcave.biz/" class="card" data-cat="comics" data-keywords="batcave comics read dc marvel independent bypass doh">
+      <div class="card-top"><div class="card-icon">BC</div><span class="badge">Reader</span></div>
+      <div><div class="card-title">Batcave Comics</div><div class="card-desc">Direct comic reader with ISP DNS bypass integrated.</div></div>
+      <div class="card-footer"><span>Open Site</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://getcomics.org/" class="card" data-cat="comics" data-keywords="getcomics comic download cbr cbz marvel dc image">
+      <div class="card-top"><div class="card-icon">GC</div><span class="badge">Download</span></div>
+      <div><div class="card-title">GetComics</div><div class="card-desc">Direct comic issue downloads in CBR/CBZ formats.</div></div>
+      <div class="card-footer"><span>Open Site</span><span>&rarr;</span></div>
+    </a>
+
+    <!-- MANGA -->
+    <a href="https://weebcentral.com" class="card" data-cat="manga" data-keywords="weebcentral manga read chapters online english">
+      <div class="card-top"><div class="card-icon">WC</div><span class="badge">Manga</span></div>
+      <div><div class="card-title">WeebCentral</div><div class="card-desc">High speed manga reader with latest scanlations.</div></div>
+      <div class="card-footer"><span>Read Manga</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://mangadot.net/" class="card" data-cat="manga" data-keywords="mangadot manga manhwa manhua reader releases">
+      <div class="card-top"><div class="card-icon">MD</div><span class="badge">Manga</span></div>
+      <div><div class="card-title">MangaDot</div><div class="card-desc">Comprehensive manga, manhwa and webtoon directory.</div></div>
+      <div class="card-footer"><span>Read Manga</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://atsu.moe/" class="card" data-cat="manga" data-keywords="atsu atsu3d manga reader clean minimal">
+      <div class="card-top"><div class="card-icon">AT</div><span class="badge">3D Manga</span></div>
+      <div><div class="card-title">Atsu Manga</div><div class="card-desc">Clean modern reading experience for manga releases.</div></div>
+      <div class="card-footer"><span>Read Manga</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://comix.to/" class="card" data-cat="manga" data-keywords="comix manga comics graphic novels reader">
+      <div class="card-top"><div class="card-icon">CX</div><span class="badge">Manga</span></div>
+      <div><div class="card-title">Comix</div><div class="card-desc">Curated manga chapters and graphic novel reader.</div></div>
+      <div class="card-footer"><span>Read Manga</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://mkissa.to/" class="card" data-cat="manga" data-keywords="mkissa kissmanga alternative manga reader chapters">
+      <div class="card-top"><div class="card-icon">MK</div><span class="badge">Manga</span></div>
+      <div><div class="card-title">MKissa</div><div class="card-desc">Fast chapter loading and popular manga series.</div></div>
+      <div class="card-footer"><span>Read Manga</span><span>&rarr;</span></div>
+    </a>
+
+    <!-- BOOKS & NOVELS -->
+    <a href="https://oceanofpdf.com/new-releases/" class="card" data-cat="books" data-keywords="oceanofpdf pdf epub books novel download">
+      <div class="card-top"><div class="card-icon">OP</div><span class="badge">Books</span></div>
+      <div><div class="card-title">OceanOfPDF</div><div class="card-desc">Direct PDF & EPUB downloads for popular books.</div></div>
+      <div class="card-footer"><span>Browse Books</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://annas-archive.gl/" class="card" data-cat="books" data-keywords="annas archive shadow library books papers search">
+      <div class="card-top"><div class="card-icon">AA</div><span class="badge">Library</span></div>
+      <div><div class="card-title">Anna's Archive</div><div class="card-desc">Largest shadow library search engine for books and papers.</div></div>
+      <div class="card-footer"><span>Search Archive</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://archive.org/" class="card" data-cat="books" data-keywords="internet archive wayback machine library media audio books">
+      <div class="card-top"><div class="card-icon">IA</div><span class="badge">Universal</span></div>
+      <div><div class="card-title">Internet Archive</div><div class="card-desc">Millions of free books, movies, software and music.</div></div>
+      <div class="card-footer"><span>Open Archive</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://kagane.moe/" class="card" data-cat="books" data-keywords="kagane web novel light novel translation fantasy">
+      <div class="card-top"><div class="card-icon">KG</div><span class="badge">Web Novels</span></div>
+      <div><div class="card-title">Kagane Novels</div><div class="card-desc">Translated web novels, light novels and fantasy reads.</div></div>
+      <div class="card-footer"><span>Read Novels</span><span>&rarr;</span></div>
+    </a>
+
+    <!-- MOVIES & SERIES -->
+    <a href="https://atlantic.bz/" class="card" data-cat="movies" data-keywords="atlantic movies tv shows streaming cinema releases">
+      <div class="card-top"><div class="card-icon">AT</div><span class="badge">Movies</span></div>
+      <div><div class="card-title">Atlantic Movies</div><div class="card-desc">Clean HD streaming for latest movies and series.</div></div>
+      <div class="card-footer"><span>Watch Movies</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://nepu.io/" class="card" data-cat="movies" data-keywords="nepu movies series stream no ads high quality">
+      <div class="card-top"><div class="card-icon">NP</div><span class="badge">Stream</span></div>
+      <div><div class="card-title">Nepu Stream</div><div class="card-desc">Fast zero-ad cinema and series streaming hub.</div></div>
+      <div class="card-footer"><span>Watch Stream</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://www.movy.sx/" class="card" data-cat="movies" data-keywords="movy 1080p full hd movies tv shows series">
+      <div class="card-top"><div class="card-icon">MV</div><span class="badge">1080p HD</span></div>
+      <div><div class="card-title">Movy 1080p</div><div class="card-desc">Full 1080p movies and trending television series.</div></div>
+      <div class="card-footer"><span>Watch Movies</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://flystream.net/" class="card" data-cat="movies" data-keywords="flystream live movies fast streaming player servers">
+      <div class="card-top"><div class="card-icon">FS</div><span class="badge">Stream</span></div>
+      <div><div class="card-title">FlyStream</div><div class="card-desc">High speed buffer-free movie and episodic streaming.</div></div>
+      <div class="card-footer"><span>Watch Stream</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://www.1shows.org/" class="card" data-cat="movies" data-keywords="1shows shows series binge episodes seasons hd">
+      <div class="card-top"><div class="card-icon">1S</div><span class="badge">TV Series</span></div>
+      <div><div class="card-title">1Shows</div><div class="card-desc">Dedicated web series, seasons and TV show binge hub.</div></div>
+      <div class="card-footer"><span>Browse Shows</span><span>&rarr;</span></div>
+    </a>
+
+    <!-- ANIME & CARTOONS -->
+    <a href="https://reanime.cz/home" class="card" data-cat="anime" data-keywords="reanime anime sub dub streaming episodes">
+      <div class="card-top"><div class="card-icon">RA</div><span class="badge">Anime</span></div>
+      <div><div class="card-title">ReAnime</div><div class="card-desc">Latest seasonal anime episodes with sub & dub.</div></div>
+      <div class="card-footer"><span>Watch Anime</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://gotaku.to/browse" class="card" data-cat="anime" data-keywords="gotaku anime streaming otaku series movies browse">
+      <div class="card-top"><div class="card-icon">GT</div><span class="badge">Otaku Hub</span></div>
+      <div><div class="card-title">GoTaku</div><div class="card-desc">Huge anime catalog with multiple streaming servers.</div></div>
+      <div class="card-footer"><span>Browse Anime</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://miruro.cx/" class="card" data-cat="anime" data-keywords="miruro anime modern minimal fast player">
+      <div class="card-top"><div class="card-icon">MR</div><span class="badge">Modern</span></div>
+      <div><div class="card-title">Miruro</div><div class="card-desc">Modern, beautiful anime streaming interface.</div></div>
+      <div class="card-footer"><span>Watch Anime</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://kotoplay.to/" class="card" data-cat="anime" data-keywords="kotoplay anime sub dub releases ongoing completed">
+      <div class="card-top"><div class="card-icon">KP</div><span class="badge">Anime</span></div>
+      <div><div class="card-title">KotoPlay</div><div class="card-desc">Ongoing and completed anime series in high quality.</div></div>
+      <div class="card-footer"><span>Watch Anime</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://www.wco.tv/" class="card" data-cat="anime" data-keywords="wco watchcartoononline cartoons animations retro movies">
+      <div class="card-top"><div class="card-icon">WC</div><span class="badge">Cartoons</span></div>
+      <div><div class="card-title">WCO Cartoons</div><div class="card-desc">Classic and modern cartoons, animations and OVA.</div></div>
+      <div class="card-footer"><span>Watch Cartoons</span><span>&rarr;</span></div>
+    </a>
+
+    <!-- K-DRAMA -->
+    <a href="https://k-drama.in/" class="card" data-cat="drama" data-keywords="kdrama k-drama korean drama episodes romance thriller">
+      <div class="card-top"><div class="card-icon">KD</div><span class="badge">K-Drama</span></div>
+      <div><div class="card-title">K-Drama Online</div><div class="card-desc">Latest Korean dramas with English subtitles.</div></div>
+      <div class="card-footer"><span>Watch Drama</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://goplay.su/" class="card" data-cat="drama" data-keywords="goplay asian drama korean chinese japanese series">
+      <div class="card-top"><div class="card-icon">GP</div><span class="badge">Asian Drama</span></div>
+      <div><div class="card-title">GoPlay Drama</div><div class="card-desc">Pan-Asian drama streaming: K-Drama, C-Drama & J-Drama.</div></div>
+      <div class="card-footer"><span>Watch Drama</span><span>&rarr;</span></div>
+    </a>
+
+    <!-- LIVE TV & SPORTS -->
+    <a href="https://thedaddy.li/" class="card" data-cat="sports" data-keywords="thedaddy live tv channels sports football cricket streaming">
+      <div class="card-top"><div class="card-icon">TD</div><span class="badge">Live TV</span></div>
+      <div><div class="card-title">TheDaddy Live</div><div class="card-desc">Hundreds of global 24/7 TV channels and live sports.</div></div>
+      <div class="card-footer"><span>Watch Live TV</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://zlive.st/" class="card" data-cat="sports" data-keywords="zlive live sports football soccer basketball ufc streams">
+      <div class="card-top"><div class="card-icon">ZL</div><span class="badge">Sports</span></div>
+      <div><div class="card-title">ZLive TV</div><div class="card-desc">Live match coverage for football, tennis and fighting.</div></div>
+      <div class="card-footer"><span>Watch Sports</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://ntv.st/matches/raptor" class="card" data-cat="sports" data-keywords="ntv sports matches fixtures soccer live stream">
+      <div class="card-top"><div class="card-icon">NT</div><span class="badge">Matches</span></div>
+      <div><div class="card-title">NTV Sports</div><div class="card-desc">Live event match listings and multi-camera streams.</div></div>
+      <div class="card-footer"><span>View Matches</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://ppv.st/" class="card" data-cat="sports" data-keywords="ppv pay per view boxing ufc mma events live">
+      <div class="card-top"><div class="card-icon">PP</div><span class="badge">PPV Stream</span></div>
+      <div><div class="card-title">PPV.st</div><div class="card-desc">Pay-per-view live boxing, MMA, UFC and fight nights.</div></div>
+      <div class="card-footer"><span>Watch PPV</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://strmfree.pk/" class="card" data-cat="sports" data-keywords="strmfree cricket live sports pakistan streams">
+      <div class="card-top"><div class="card-icon">SF</div><span class="badge">Sports</span></div>
+      <div><div class="card-title">StreamFree PK</div><div class="card-desc">Live cricket, football and regional Asian sports streaming.</div></div>
+      <div class="card-footer"><span>Watch Stream</span><span>&rarr;</span></div>
+    </a>
+
+    <!-- MOVIE DOWNLOADS -->
+    <a href="https://mkvbase.site/" class="card" data-cat="downloads" data-keywords="mkvbase mkv movies direct download dual audio 1080p">
+      <div class="card-top"><div class="card-icon">MB</div><span class="badge">MKV Direct</span></div>
+      <div><div class="card-title">MkvBase</div><div class="card-desc">Direct high-speed MKV movie downloads in 720p/1080p.</div></div>
+      <div class="card-footer"><span>Get Movies</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://modlist.in/" class="card" data-cat="downloads" data-keywords="modlist apk movies series apps direct download">
+      <div class="card-top"><div class="card-icon">ML</div><span class="badge">Downloads</span></div>
+      <div><div class="card-title">ModList</div><div class="card-desc">Direct download lists for entertainment and media files.</div></div>
+      <div class="card-footer"><span>Access List</span><span>&rarr;</span></div>
+    </a>
+
+    <!-- BECKYFINDS VAULT -->
+    <a href="https://pjneha66.github.io/beckyfinds/" class="card" data-cat="beckyfinds" data-keywords="beckyfinds ai tools apps directory curated official">
+      <div class="card-top"><div class="card-icon">BF</div><span class="badge">Official</span></div>
+      <div><div class="card-title">BeckyFinds Hub</div><div class="card-desc">Official Curated AI Tools & Software Directory.</div></div>
+      <div class="card-footer"><span>Open Web App</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://vegamovies.free/" class="card" data-cat="beckyfinds" data-keywords="vegamovies dual audio 4k 1080p movies series download">
+      <div class="card-top"><div class="card-icon">VM</div><span class="badge">Vault</span></div>
+      <div><div class="card-title">VegaMovies</div><div class="card-desc">Dual audio Hollywood, Bollywood & web series.</div></div>
+      <div class="card-footer"><span>Access Vault</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://4khdhub.one/" class="card" data-cat="beckyfinds" data-keywords="4khdhub 4k hdr ultra hd web rips download">
+      <div class="card-top"><div class="card-icon">4K</div><span class="badge">4K Ultra</span></div>
+      <div><div class="card-title">4kHdHub</div><div class="card-desc">Ultra HD 4K HDR downloads, remux and web rips.</div></div>
+      <div class="card-footer"><span>Access Vault</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://hdhub4u.fr/" class="card" data-cat="beckyfinds" data-keywords="hdhub4u movies series fast download direct">
+      <div class="card-top"><div class="card-icon">H4</div><span class="badge">Vault</span></div>
+      <div><div class="card-title">HDHub4u</div><div class="card-desc">Fast Hollywood, Bollywood & South cinema downloads.</div></div>
+      <div class="card-footer"><span>Access Vault</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://movieparadise.org/" class="card" data-cat="beckyfinds" data-keywords="movieparadise movies direct download links verified">
+      <div class="card-top"><div class="card-icon">MP</div><span class="badge">Vault</span></div>
+      <div><div class="card-title">MovieParadise</div><div class="card-desc">Direct download links for movies and TV series.</div></div>
+      <div class="card-footer"><span>Access Vault</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://xdmovies.com/" class="card" data-cat="beckyfinds" data-keywords="xdmovies x265 hevc compressed high quality movies">
+      <div class="card-top"><div class="card-icon">XD</div><span class="badge">x265 HEVC</span></div>
+      <div><div class="card-title">XDmovies</div><div class="card-desc">High efficiency x265 HEVC small size movie rips.</div></div>
+      <div class="card-footer"><span>Access Vault</span><span>&rarr;</span></div>
+    </a>
+
+    <!-- CORE TOOLS -->
+    <a href="https://start.me/p/L1rEYQ/osint4all" class="card" data-cat="tools" data-keywords="osint osint4all intelligence investigation tools">
+      <div class="card-top"><div class="card-icon">OS</div><span class="badge">OSINT</span></div>
+      <div><div class="card-title">OSINT4ALL</div><div class="card-desc">Investigation & open source intelligence hub.</div></div>
+      <div class="card-footer"><span>Launch Hub</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://fmhy.net/" class="card" data-cat="tools" data-keywords="fmhy freemediaheckyeah free media tools wiki vault">
+      <div class="card-top"><div class="card-icon">FM</div><span class="badge">Wiki Vault</span></div>
+      <div><div class="card-title">FMHY</div><div class="card-desc">FreeMediaHeckYeah: the largest free resources wiki.</div></div>
+      <div class="card-footer"><span>Open Wiki</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://www.youtube.com/" class="card" data-cat="tools" data-keywords="youtube video web app adblock google">
+      <div class="card-top"><div class="card-icon">YT</div><span class="badge">Web App</span></div>
+      <div><div class="card-title">YouTube</div><div class="card-desc">Ad-free mobile video playback with uBlock Origin.</div></div>
+      <div class="card-footer"><span>Open App</span><span>&rarr;</span></div>
+    </a>
+
+    <a href="https://music.youtube.com/" class="card" data-cat="tools" data-keywords="yt music streaming background play audio songs">
+      <div class="card-top"><div class="card-icon">YM</div><span class="badge">Web App</span></div>
+      <div><div class="card-title">YouTube Music</div><div class="card-desc">Stream millions of songs with background playback.</div></div>
+      <div class="card-footer"><span>Open App</span><span>&rarr;</span></div>
+    </a>
+
+    <div class="empty-state" id="emptyState">No services match your search query.</div>
+  </div>
+
+  <script>
+    let currentCategory = 'all';
+
+    function selectTab(cat, btn) {
+      currentCategory = cat;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      if (btn) {
+        btn.classList.add('active');
+        btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
+      filterHub();
+    }
+
+    function filterHub() {
+      const q = document.getElementById('searchInput').value.toLowerCase().trim();
+      const cards = document.querySelectorAll('#itemsGrid .card');
+      let visible = 0;
+
+      cards.forEach(card => {
+        const cat = card.getAttribute('data-cat');
+        const kw = (card.getAttribute('data-keywords') || '') + ' ' + card.innerText.toLowerCase();
+        const matchesCat = (currentCategory === 'all' || cat === currentCategory);
+        const matchesQuery = (!q || kw.includes(q));
+
+        if (matchesCat && matchesQuery) {
+          card.style.display = 'flex';
+          visible++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      const empty = document.getElementById('emptyState');
+      if (empty) {
+        empty.style.display = visible === 0 ? 'block' : 'none';
+      }
+    }
+
+    function applyHash() {
+      const hash = window.location.hash.replace('#', '').toLowerCase();
+      if (hash) {
+        const targetBtn = document.querySelector(`.tab-btn[data-target="${hash}"]`);
+        if (targetBtn) {
+          selectTab(hash, targetBtn);
+          return;
+        }
+      }
+      const allBtn = document.querySelector('.tab-btn[data-target="all"]');
+      if (allBtn) selectTab('all', allBtn);
+    }
+
+    window.addEventListener('hashchange', applyHash);
+    window.addEventListener('DOMContentLoaded', applyHash);
+  </script>
+</body>
+</html>
